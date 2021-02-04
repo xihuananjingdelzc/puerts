@@ -69,9 +69,17 @@ var global = global || (function () { return this; }());
     
     function genRequire(requiringDir) {
         let localModuleCache = Object.create(null);
-        function require(moduleName, forceReload) {
+        function require(moduleName) {
             moduleName = normalize(moduleName);
-            if ((moduleName in localModuleCache) && !forceReload) return localModuleCache[moduleName].exports;
+            let forceReload = false;
+            if ((moduleName in localModuleCache)) {
+                let m = localModuleCache[moduleName];
+                if (!m.__forceReload) {
+                    return localModuleCache[moduleName].exports;
+                } else {
+                    forceReload = true;
+                }
+            }
             if (moduleName in buildinModule) return buildinModule[moduleName];
             let nativeModule = findModule(moduleName);
             if (nativeModule) {
@@ -99,12 +107,12 @@ var global = global || (function () { return this; }());
                 let tmpRequire = genRequire(fullDirInJs);
                 let r = tmpRequire(packageConfigure.main);
                 tmpModuleStorage[sid] = undefined;
-                return r;
+                m.exports = r;
             } else {
                 executeModule(fullPath, script, debugPath, sid);
                 tmpModuleStorage[sid] = undefined;
-                return m.exports;
             }
+            return m.exports;
         }
 
         return require;
@@ -114,11 +122,30 @@ var global = global || (function () { return this; }());
         buildinModule[name] = module;
     }
     
+    function reload(reloadModuleKey) {
+        if (reloadModuleKey) {
+            reloadModuleKey = normalize(reloadModuleKey);
+        }
+        let reloaded = false;
+        for(var moduleKey in moduleCache) {
+            if (!reloadModuleKey || (reloadModuleKey == moduleKey)) {
+                moduleCache[moduleKey].__forceReload = true;
+                reloaded = true;
+                if (reloadModuleKey) break;
+            }
+        }
+        if (!reloaded && reloadModuleKey) {
+            console.warn(`reload not loaded module: ${reloadModuleKey}!`);
+        }
+    }
+    
     registerBuildinModule("puerts", puerts)
 
     puerts.genRequire = genRequire;
     
     puerts.__require = genRequire("");
+    
+    puerts.__reload = reload;
     
     puerts.getModuleBySID = getModuleBySID;
     

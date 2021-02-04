@@ -12,7 +12,7 @@
 #include "Modules/ModuleManager.h"
 #include "CoreMinimal.h"
 
-class IPuertsModule : public IModuleInterface
+class PUERTS_API IPuertsModule : public IModuleInterface
 {
 public:
     static inline IPuertsModule& Get()
@@ -24,4 +24,8 @@ public:
     {
         return FModuleManager::Get().IsModuleLoaded("Puerts");
     }
+
+    virtual bool IsEnabled() = 0;
+
+    virtual void ReloadJsModule(FName ModuleName) = 0;
 };
